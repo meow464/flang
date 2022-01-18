@@ -150,6 +150,20 @@ elseif(${LIBPGMATH_SYSTEM_PROCESSOR} MATCHES "aarch64")
       kidnnt.c
       sincos.c
       sincosf.c)
+  elseif(${LIBPGMATH_SYSTEM_NAME} MATCHES "iOS")
+    set_property(SOURCE dispatch.c APPEND_STRING PROPERTY COMPILE_FLAGS "-fno-builtin")
+    set_property(SOURCE mth_128defs_init.c APPEND PROPERTY COMPILE_DEFINITIONS MTH_I_INTRIN_INIT)
+    set_property(SOURCE mth_128defs_stats.c APPEND PROPERTY COMPILE_DEFINITIONS MTH_I_INTRIN_STATS)
+    set(MTH_INTRINSICS_SRCS
+      mth_128defs.c
+      mth_128defs_init.c
+      mth_128defs_stats.c)
+    libmath_add_object_library("${MTH_INTRINSICS_SRCS}" "${FLAGS}" "${DEFINITIONS}" "mth_intrinsics")
+
+    set(SRCS
+      kidnnt.c
+      sincos.c
+      sincosf.c)
   else()
     set_property(SOURCE dispatch.c APPEND_STRING PROPERTY COMPILE_FLAGS "-fno-builtin")
     set_property(SOURCE mth_xintrinsics.c APPEND_STRING PROPERTY COMPILE_FLAGS "-mcpu=${LLVM_FLANG_CPU_TARGET} ")
