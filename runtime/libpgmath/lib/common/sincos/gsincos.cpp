@@ -34,14 +34,14 @@
 #define VFLOAT  CONCAT4(vr,PREC,VLEN,_t)
 #define VINT    CONCAT4(vi,PREC,VLEN,_t)
 
-#ifndef TARGET_OSX_X8664
-#define VFLOATRETURN    CONCAT4(__mth_return2,VFLOAT,,)
-#else
+#if defined(TARGET_OSX_X8664) || defined(TARGET_iOS_ARM64)
 /*
  * OSX does not support weak aliases - so just use the generic for all
  * vector types.
  */
 #define VFLOATRETURN    __mth_return2vectors
+#else 
+#define VFLOATRETURN    CONCAT4(__mth_return2,VFLOAT,,)
 #endif
 #define GENERICNAME     CONCAT4(__g,PREC,_sincos_,VLEN)
 #define GENERICNAMEMASK CONCAT5(__g,PREC,_sincos_,VLEN,m)
@@ -68,6 +68,7 @@
   #error Unknown architecture
 #endif
 
+extern "C" void sincosf(float, float*, float*) throw();
 extern "C" void sincos(double, double*, double*) throw();
 extern "C" VFLOAT  VFLOATRETURN(VFLOAT, VFLOAT);
 
