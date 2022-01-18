@@ -18,10 +18,11 @@ function print_hdrs()
  *\n\
  */\n\
 \n\n\
+#include \"mth_intrinsics.h\" \n\
+\n\n\
 #ifdef __cplusplus\n\
 extern \"C\" {\n\
 #endif\n\n\
-#include \"mth_intrinsics.h\" \n\
 #include \"mth_tbldefs.h\" \n\
 \n\n\
 static const vrs4_t Csp1_4={1.0, 1.0, 1.0, 1.0}; \n\
