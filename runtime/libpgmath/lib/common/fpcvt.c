@@ -34,8 +34,10 @@ union ieee {
 };
 #endif
 
-#if defined(TARGET_OSX)
+#if defined(TARGET_OSX) || defined(TARGET_iOS)
 #include <string.h>
+
+void __io_set_errno(int);
 #endif
 
 typedef long INT;
