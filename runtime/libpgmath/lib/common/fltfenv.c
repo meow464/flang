@@ -466,6 +466,10 @@ __fenv_restore_mxcsr(int sv)
 
 #include <fenv.h>
 
+#if defined (TARGET_iOS_ARM64) || defined (TARGET_iOS_AARCH64)
+#pragma FENV_ACCESS ON
+#endif
+
 int
 __fenv_fegetround(void)
 {
@@ -530,13 +534,66 @@ __fenv_fegetexcept(void)
   return 0;
 }
 
-#else
+#elif defined (TARGET_iOS_ARM64) || defined (TARGET_iOS_AARCH64)
+
 int
 __fenv_feenableexcept(int exc)
 {
-  return feenableexcept(exc);
+  fexcept_t new_flagp, old_flagp;
+  int new_exc, old_exc;
+
+  // the subset of exc that's already on
+  old_exc = fetestexcept(exc);
+  // the subset of exc that's not already on
+  new_exc = old_exc ^ exc;
+
+  // get the states of the excepts we need to turn on
+  fegetexceptflag(&old_flagp, new_exc);
+
+  // flips all flags
+  new_flagp = ~old_flagp;
+
+  // sets all new_exc flags to the state in new_flagp (on)
+  fesetexceptflag(&new_flagp, new_exc);
+  return 0;
 }
 
+int
+__fenv_fedisableexcept(int exc)
+{
+  fexcept_t new_flagp, old_flagp;
+  int new_exc, old_exc;
+
+  // the subset of exc that's on
+  old_exc = fetestexcept(exc);
+
+  // the subset of exc we need to turn off
+  new_exc = old_exc & exc;
+
+  // get the states of the excepts we need to turn off
+  fegetexceptflag(&old_flagp, new_exc);
+
+  // flips all flags
+  new_flagp = ~old_flagp;
+
+  // sets all new_exc flags to the state in new_flagp (off)
+  fesetexceptflag(&new_flagp, new_exc);
+  return 0;
+}
+
+int
+__fenv_fegetexcept(void)
+{
+  return fetestexcept(FE_ALL_EXCEPT);
+}
+
+#else
+int
+__fenv_feenableexcept(int exc)
+nnn{
+  return feenableexcept(exc);
+}
+nnn
 int
 __fenv_fedisableexcept(int exc)
 {
@@ -656,8 +713,72 @@ __fenv_restore_fz(int sv)
   _FPU_SETCW(tmp);
 }
 
-#else
+#elif defined (TARGET_iOS_ARM64) || defined (TARGET_iOS_AARCH64)
+/** \brief Unimplemented: Set (flush to zero) underflow mode
+ *
+ * \param uflow zero to allow denorm numbers,
+ *              non-zero integer to flush to zero
+ */
+int
+__fenv_fesetzerodenorm(int uflow)
+{
+  if (uflow)
+    // allow denorm (disable flush to zero)
+    __fenv_feenableexcept(FE_FLUSHTOZERO);
+  else
+    // enable flush to zero
+    __fenv_fedisableexcept(FE_FLUSHTOZERO);
 
+  return 0;
+}
+
+/** \brief Unimplemented: Get (flush to zero) underflow mode
+ *
+ * \return 1 if flush to zero is set, 0 otherwise
+ */
+int
+__fenv_fegetzerodenorm(void)
+{
+  return fetestexcept(FE_FLUSHTOZERO) == FE_FLUSHTOZERO ? 1 : 0;
+}
+
+/** \brief
+ * Mask fz bit of fpcr, e.g., a value of 0x0 says to clear FZ
+ * (i.e., enable 'full' denorm support).
+ *
+ * Save the current value of the fpcr.fz if requested.
+ * Note this routine will only be called by the compiler for
+ * better targets.
+ */
+void
+__fenv_mask_fz(int mask, int *psv)
+{
+  fexcept_t tmp;
+  int is_enabled;
+
+  tmp = __fenv_fegetexcept() & FE_FLUSHTOZERO;
+  is_enabled = (tmp & FE_FLUSHTOZERO) ? 1 : 0;
+  if (psv)
+    *psv = is_enabled;
+  if (mask && !is_enabled)
+    __fenv_feenableexcept(FE_FLUSHTOZERO);
+  if (!mask && is_enabled)
+    __fenv_fedisableexcept(FE_FLUSHTOZERO);
+}
+
+/** \brief
+ * Restore the current value of the fpcr.fz.
+ */
+void
+__fenv_restore_fz(int sv)
+{
+  if (sv)
+    __fenv_feenableexcept(FE_FLUSHTOZERO);
+  else
+    __fenv_fedisableexcept(FE_FLUSHTOZERO);
+}
+
+#else
 /*
  * Other architectures - currently only POWER.
  * Stub out __fenv_fesetzerodenorm() and __fenv_fegetzerodenorm().
