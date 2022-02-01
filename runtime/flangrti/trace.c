@@ -61,6 +61,10 @@ dbg_stop_before_exit(void)
 #define _Exit _exit
 #endif
 
+#if defined(TARGET_iOS)
+#define system(cmd) ((cmd)==NULL ? 0 : -1)
+#endif
+
 void
 __abort(int sv, const char *msg)
 {
