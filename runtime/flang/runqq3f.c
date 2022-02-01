@@ -13,6 +13,10 @@
 #include "ent3f.h"
 #include "mpalloc.h"
 
+#if defined(TARGET_iOS)
+#define system(cmd) ((cmd)==NULL ? 0 : -1)
+#endif
+
 extern char *__fstr2cstr();
 extern void __cstr_free();
 extern void *_mp_malloc();

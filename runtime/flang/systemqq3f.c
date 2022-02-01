@@ -12,6 +12,10 @@
 #include <stdlib.h>
 #include "ent3f.h"
 
+#if defined(TARGET_iOS)
+#define system(cmd) ((cmd)==NULL ? 0 : -1)
+#endif
+
 extern char *__fstr2cstr();
 extern void __cstr_free();
 
