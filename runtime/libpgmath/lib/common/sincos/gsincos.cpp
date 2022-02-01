@@ -68,7 +68,6 @@
   #error Unknown architecture
 #endif
 
-extern "C" void sincosf(float, float*, float*) throw();
 extern "C" void sincos(double, double*, double*) throw();
 extern "C" VFLOAT  VFLOATRETURN(VFLOAT, VFLOAT);
 
