@@ -423,36 +423,65 @@ separate_arguments(SEPARATED_CMAKE_Fortran_FLAGS NATIVE_COMMAND ${CMAKE_Fortran_
 # Fortran files with macros as module names need to be preprocessed.
 # CMake has an internal Fortran parser that parses the module name, but it doesn't
 # consider macros which results in wrong dependencies.
-add_custom_command(
-  OUTPUT "${I8_FILES_DIR}/ieee_arithmetic.F95"
-  COMMAND "${CMAKE_Fortran_COMPILER}" -E -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
-  "${CMAKE_CURRENT_SOURCE_DIR}/ieee_arithmetic.F95" -DDESC_I8
-  > "${I8_FILES_DIR}/ieee_arithmetic.F95"
-  COMMENT "Preprocessing ieee_arithmetic.F95"
-  VERBATIM
-  DEPENDS flang1 flang2
-)
+if(${TARGET_OS} STREQUAL "iOS" )
+  add_custom_command(
+    OUTPUT "${I8_FILES_DIR}/ieee_arithmetic.F95"
+    COMMAND "${CMAKE_Fortran_COMPILER}" -E -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
+    "${CMAKE_CURRENT_SOURCE_DIR}/ieee_arithmetic.F95" -DDESC_I8
+    > "${I8_FILES_DIR}/ieee_arithmetic.F95"
+    COMMENT "Preprocessing ieee_arithmetic.F95"
+    VERBATIM
+    )
 
-add_custom_command(
-  OUTPUT "${I8_FILES_DIR}/ieee_exceptions.F95"
-  COMMAND "${CMAKE_Fortran_COMPILER}" -E -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
-  "${CMAKE_CURRENT_SOURCE_DIR}/ieee_exceptions.F95" -DDESC_I8
-  > "${I8_FILES_DIR}/ieee_exceptions.F95"
-  COMMENT "Preprocessing ieee_exceptions.F95"
-  VERBATIM
-  DEPENDS flang1 flang2
-)
+  add_custom_command(
+    OUTPUT "${I8_FILES_DIR}/ieee_exceptions.F95"
+    COMMAND "${CMAKE_Fortran_COMPILER}" -E -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
+    "${CMAKE_CURRENT_SOURCE_DIR}/ieee_exceptions.F95" -DDESC_I8
+    > "${I8_FILES_DIR}/ieee_exceptions.F95"
+    COMMENT "Preprocessing ieee_exceptions.F95"
+    VERBATIM
+    )
 
-add_custom_command(
-  OUTPUT ${I8_FILES_DIR}/norm2_1.F95 norm2_1.F95
-  COMMAND "${CMAKE_Fortran_COMPILER}" -E -DDESC_I8 -DPGFLANG -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/norm2.F95 > "${I8_FILES_DIR}/norm2_1.F95"
-  COMMAND "${CMAKE_Fortran_COMPILER}" -E -DPGFLANG -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/norm2.F95 > "norm2_1.F95"
-  VERBATIM
-  DEPENDS flang1 flang2
-)
+  add_custom_command(
+    OUTPUT ${I8_FILES_DIR}/norm2_1.F95 norm2_1.F95
+    COMMAND "${CMAKE_Fortran_COMPILER}" -E -DDESC_I8 -DPGFLANG -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/norm2.F95 > "${I8_FILES_DIR}/norm2_1.F95"
+    COMMAND "${CMAKE_Fortran_COMPILER}" -E -DPGFLANG -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/norm2.F95 > "norm2_1.F95"
+    VERBATIM
+    )
+else()
+  add_custom_command(
+    OUTPUT "${I8_FILES_DIR}/ieee_arithmetic.F95"
+    COMMAND "${CMAKE_Fortran_COMPILER}" -E -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
+    "${CMAKE_CURRENT_SOURCE_DIR}/ieee_arithmetic.F95" -DDESC_I8
+    > "${I8_FILES_DIR}/ieee_arithmetic.F95"
+    COMMENT "Preprocessing ieee_arithmetic.F95"
+    VERBATIM
+    DEPENDS flang1 flang2
+    )
 
+  add_custom_command(
+    OUTPUT "${I8_FILES_DIR}/ieee_exceptions.F95"
+    COMMAND "${CMAKE_Fortran_COMPILER}" -E -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
+    "${CMAKE_CURRENT_SOURCE_DIR}/ieee_exceptions.F95" -DDESC_I8
+    > "${I8_FILES_DIR}/ieee_exceptions.F95"
+    COMMENT "Preprocessing ieee_exceptions.F95"
+    VERBATIM
+    DEPENDS flang1 flang2
+    )
+  
+  add_custom_command(
+    OUTPUT ${I8_FILES_DIR}/norm2_1.F95 norm2_1.F95
+    COMMAND "${CMAKE_Fortran_COMPILER}" -E -DDESC_I8 -DPGFLANG -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/norm2.F95 > "${I8_FILES_DIR}/norm2_1.F95"
+    COMMAND "${CMAKE_Fortran_COMPILER}" -E -DPGFLANG -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/norm2.F95 > "norm2_1.F95"
+    VERBATIM
+    DEPENDS flang1 flang2
+    )
+endif()
+  
 # The files lists FTN_INTRINSICS_DESC_DEP and FTN_SUPPORT_DESC_DEP need to be compiled twice (with and without 'DESC_I8' compile definition). So an actual copy is made in a temp file on which this is done.
 
 FOREACH(file ${FTN_INTRINSICS_DESC_DEP})
@@ -653,17 +682,19 @@ target_include_directories(flang_shared
   ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-# Make sure the compiler is built before we bootstrap
-add_dependencies(flang_static
-  flang1
-  flang2
-  )
+if(NOT ${TARGET_OS} STREQUAL "iOS" )
+  # Make sure the compiler is built before we bootstrap
+  add_dependencies(flang_static
+    flang1
+    flang2
+    )
 
-# Make sure the compiler is built before we bootstrap
-add_dependencies(flang_shared
-  flang1
-  flang2
-  )
+  # Make sure the compiler is built before we bootstrap
+  add_dependencies(flang_shared
+    flang1
+    flang2
+    )
+endif()
 
 if (NOT MSVC)
   target_compile_options(flang_static PRIVATE -fPIC)
