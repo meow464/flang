@@ -72,7 +72,9 @@ else()
 endif()
 
 
-set(SHARED_LIBRARY TRUE)
+#if(NOT ${TARGET_OS} STREQUAL "iOS")
+  set(SHARED_LIBRARY TRUE)
+#endif()
 add_flang_library(flangrti_shared
   ${PGC_SRC_FILES}
   ${SHARED_SOURCES}
@@ -91,19 +93,31 @@ if (CMAKE_THREAD_LIBS_INIT)
 endif()
 
 # Import OpenMP
-if (NOT DEFINED LIBOMP_EXPORT_DIR)
-  find_library(
-    FLANG_LIBOMP
-    NAMES omp libomp
-    HINTS ${CMAKE_BINARY_DIR}/lib)
-  target_link_libraries(flangrti_shared PUBLIC ${FLANG_LIBOMP})
+if(IOS)
+  target_link_libraries(flangrti_shared PUBLIC ompstub_shared)
+else()
+  if (NOT DEFINED LIBOMP_EXPORT_DIR)
+    find_library(
+      FLANG_LIBOMP
+      NAMES omp libomp
+      HINTS ${CMAKE_BINARY_DIR}/lib)
+    target_link_libraries(flangrti_shared PUBLIC ${FLANG_LIBOMP})
+  endif()
 endif()
 
-find_library(
-  LIBPGMATH
-  NAMES pgmath libpgmath
-  HINTS ${CMAKE_BINARY_DIR}/lib)
-target_link_libraries(flangrti_shared PUBLIC ${LIBPGMATH})
+if(IOS)
+  find_library(
+    LIBPGMATH
+    NAMES pgmath libpgmath
+    HINTS ${CMAKE_INSTALL_PREFIX}/lib)
+  target_link_libraries(flangrti_shared PUBLIC ${LIBPGMATH})
+else()
+    find_library(
+      LIBPGMATH
+      NAMES pgmath libpgmath
+      HINTS ${CMAKE_BINARY_DIR}/lib)
+    target_link_libraries(flangrti_shared PUBLIC ${LIBPGMATH})
+endif()
 
 if( ${TARGET_ARCHITECTURE} STREQUAL "aarch64" )
   target_compile_definitions(flangrti_static PRIVATE TARGET_LINUX_ARM)
