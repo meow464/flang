@@ -13,7 +13,7 @@
 
 #include <fenv.h>
 
-#if !defined(TARGET_OSX)
+#if !defined(TARGET_OSX) && !defined(TARGET_iOS)
 /* Use the LINUX interpretation of 'weak references' */
 extern int __ktrapval __attribute__ ((weak));
 
@@ -50,7 +50,7 @@ __ktrap(void)
         excepts |= FE_UNDERFLOW;
       if (bv & 0x100)
         excepts |= FE_INEXACT;
-#ifdef TARGET_OSX
+#if defined(TARGET_OSX) || defined(TARGET_iOS)
       __fenv_feenableexcept(excepts);
 #else
       feenableexcept(excepts);  /* glibc 2.2 extension to fenv.h */
