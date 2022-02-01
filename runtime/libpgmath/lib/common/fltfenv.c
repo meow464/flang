@@ -590,10 +590,10 @@ __fenv_fegetexcept(void)
 #else
 int
 __fenv_feenableexcept(int exc)
-nnn{
+{
   return feenableexcept(exc);
 }
-nnn
+
 int
 __fenv_fedisableexcept(int exc)
 {
