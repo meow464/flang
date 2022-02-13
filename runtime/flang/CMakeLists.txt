@@ -518,38 +518,40 @@ else()
   set_property(TARGET flang_static PROPERTY OUTPUT_NAME flang)
 endif()
 
-set(SHARED_LIBRARY TRUE)
-add_flang_library(flang_shared
-  ${FTN_INTRINSICS_DESC_INDEP}
-  ${FTN_INTRINSICS_DESC_DEP}
-  ${FTN_INTRINSICS_I8}
-  ${FTN_SUPPORT_DESC_INDEP}
-  ${FTN_SUPPORT_DESC_DEP}
-  ${FTN_SUPPORT_I8}
-  ${SHARED_SOURCES}
-  )
-set_property(TARGET flang_shared PROPERTY OUTPUT_NAME flang)
+if(NOT IOS)
+  set(SHARED_LIBRARY TRUE)
+  add_flang_library(flang_shared
+    ${FTN_INTRINSICS_DESC_INDEP}
+    ${FTN_INTRINSICS_DESC_DEP}
+    ${FTN_INTRINSICS_I8}
+    ${FTN_SUPPORT_DESC_INDEP}
+    ${FTN_SUPPORT_DESC_DEP}
+    ${FTN_SUPPORT_I8}
+    ${SHARED_SOURCES}
+    )
+  set_property(TARGET flang_shared PROPERTY OUTPUT_NAME flang)
 
-# Seralize the building of flang_shared and flang_static to eliminate
-# conflicts with the same module files from the shared and static builds
-# being created/recreated in the common directory
-# ${CMAKE_Fortran_MODULE_DIRECTORY}.
-#
-# Note: building of each library is still parallelized.
-#
-add_dependencies(flang_shared flang_static)
+  # Seralize the building of flang_shared and flang_static to eliminate
+  # conflicts with the same module files from the shared and static builds
+  # being created/recreated in the common directory
+  # ${CMAKE_Fortran_MODULE_DIRECTORY}.
+  #
+  # Note: building of each library is still parallelized.
+  #
+  add_dependencies(flang_shared flang_static)
+  
+  target_link_libraries(flang_shared flangrti_shared)
+  # Resolve symbols against libm and librt
+  if (MSVC)
+    set_target_properties(flang_shared PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+  elseif (APPLE)
+    target_link_libraries(flang_shared m)
+  else()
+    target_link_libraries(flang_shared m rt)
+  endif()
 
-target_link_libraries(flang_shared flangrti_shared)
-# Resolve symbols against libm and librt
-if (MSVC)
-  set_target_properties(flang_shared PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-elseif (APPLE)
-  target_link_libraries(flang_shared m)
-else()
-  target_link_libraries(flang_shared m rt)
+  set(SHARED_LIBRARY FALSE)
 endif()
-
-set(SHARED_LIBRARY FALSE)
 
 set_property(
   SOURCE ${FTN_INTRINSICS_DESC_INDEP} ${FTN_INTRINSICS_DESC_DEP} ${SHARED_SOURCES}
@@ -665,22 +667,35 @@ else ()
   )
 endif()
 
-set_target_properties(flang_static flang_shared
-  PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY ${FLANG_RTE_LIB_DIR}
-  )
+if(IOS)
+  set_target_properties(flang_static
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${FLANG_RTE_LIB_DIR}
+    )
 
-target_include_directories(flang_static
-  PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  )
+  target_include_directories(flang_static
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    )
+else()
+  set_target_properties(flang_static flang_shared
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${FLANG_RTE_LIB_DIR}
+    )
 
-target_include_directories(flang_shared
-  PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  )
+  target_include_directories(flang_static
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    )
+
+  target_include_directories(flang_shared
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    )
+endif()
 
 if(NOT ${TARGET_OS} STREQUAL "iOS" )
   # Make sure the compiler is built before we bootstrap
@@ -690,21 +705,23 @@ if(NOT ${TARGET_OS} STREQUAL "iOS" )
     )
 
   # Make sure the compiler is built before we bootstrap
-  add_dependencies(flang_shared
-    flang1
-    flang2
-    )
+  # add_dependencies(flang_shared
+  #   flang1
+  #   flang2
+  #   )
 endif()
 
-if (NOT MSVC)
+if(IOS)
   target_compile_options(flang_static PRIVATE -fPIC)
-  target_compile_options(flang_shared PRIVATE -fPIC)
-else()
+elseif(MSVC)
   set_target_properties(flang_static PROPERTIES LINKER_LANGUAGE CXX)
   set_target_properties(flang_shared PROPERTIES LINKER_LANGUAGE CXX)
+else()
+  target_compile_options(flang_static PRIVATE -fPIC)
+  target_compile_options(flang_shared PRIVATE -fPIC)
 endif()
 
 target_compile_options(flang_static PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-Mreentrant>)
-
+if(NOT IOS)
 target_compile_options(flang_shared PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-Mreentrant>)
-
+endif()

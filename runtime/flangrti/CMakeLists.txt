@@ -72,9 +72,9 @@ else()
 endif()
 
 
-#if(NOT ${TARGET_OS} STREQUAL "iOS")
+if(NOT IOS)
   set(SHARED_LIBRARY TRUE)
-#endif()
+endif()
 add_flang_library(flangrti_shared
   ${PGC_SRC_FILES}
   ${SHARED_SOURCES}

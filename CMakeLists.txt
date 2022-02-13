@@ -307,6 +307,9 @@ endif ()
 
 if(IOS)
   set(CMAKE_IGNORE_PATH "/System/Library/Frameworks;/usr/local/lib" CACHE INTERNAL "")
+  set(CMAKE_Fortran_FLAGS "-Kieee ${CMAKE_Fortran_FLAGS} -arch ${CMAKE_OSX_ARCHITECTURES} -mcpu=${LLVM_FLANG_CPU_TARGET} -target arm64-apple-ios -mios-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET} -isysroot ${CMAKE_OSX_SYSROOT} -fembed-bitcode")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fembed-bitcode")
 endif()
 
 macro(add_flang_library name)

@@ -157,10 +157,10 @@ elseif(${LIBPGMATH_SYSTEM_PROCESSOR} MATCHES "aarch64")
     set(DEFINITIONS_L1 HOST_OSX MAXCPUS=256 MAXCPUSL=8 MAXCPUSR=4 iOS iOSARM64
       iOSAARCH64 TARGET_iOS TARGET_iOS_ARM64 TARGET_ARM64
       __gnu_osx__ PG_PIC)
-    set(FLAGS_L1 "-arch arm64 -target arm64-apple-ios${CMAKE_OSX_DEPLOYMENT_TARGET} -mcpu=${LLVM_FLANG_CPU_TARGET} -ffast-math -funroll-loops")
+    set(FLAGS_L1 "-arch arm64 -target arm64-apple-ios${CMAKE_OSX_DEPLOYMENT_TARGET} -mcpu=${LLVM_FLANG_CPU_TARGET} -ffast-math -funroll-loops -fembed-bitcode")
 
     set(DEFINITIONS_L2 iOS TARGET_iOS TARGET_iOS_ARM64 TARGET_iOS_AARCH64 PG_PIC TARGET_ARM64 TARGET_AARCH64)
-    set(FLAGS_L2 "-arch arm64 -target arm64-apple-ios${CMAKE_OSX_DEPLOYMENT_TARGET} -mcpu=${LLVM_FLANG_CPU_TARGET} -ffast-math -funroll-loops")
+    set(FLAGS_L2 "-arch arm64 -target arm64-apple-ios${CMAKE_OSX_DEPLOYMENT_TARGET} -mcpu=${LLVM_FLANG_CPU_TARGET} -ffast-math -funroll-loops -fembed-bitcode")
 
   else()
     set(DEFINITIONS_L1 HOST_LINUX MAXCPUS=8192 MAXCPUSL=128 MAXCPUSR=128
@@ -254,8 +254,11 @@ endif()
 get_property(TARGET_OBJECTS GLOBAL PROPERTY "TARGET_OBJECTS")
 
 add_library(${LIBPGMATH_LIBRARY_NAME}_static STATIC ${TARGET_OBJECTS})
-add_library(${LIBPGMATH_LIBRARY_NAME} SHARED ${TARGET_OBJECTS})
-target_link_libraries(${LIBPGMATH_LIBRARY_NAME} INTERFACE ${LIBPGMATH_LIBRARY_NAME}_static)
+
+if(NOT ${IOS})
+  add_library(${LIBPGMATH_LIBRARY_NAME} SHARED ${TARGET_OBJECTS})
+  target_link_libraries(${LIBPGMATH_LIBRARY_NAME} INTERFACE ${LIBPGMATH_LIBRARY_NAME}_static)
+endif()
 
 if(${LIBPGMATH_SYSTEM_NAME} MATCHES "Windows")
     set_target_properties(${LIBPGMATH_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME lib${LIBPGMATH_LIBRARY_NAME})
@@ -268,11 +271,13 @@ add_custom_command (TARGET ${LIBPGMATH_LIBRARY_NAME} PRE_LINK
 endif()
 
 else()
-    set_target_properties(${LIBPGMATH_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME ${LIBPGMATH_LIBRARY_NAME})
-  endif()
+  set_target_properties(${LIBPGMATH_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME ${LIBPGMATH_LIBRARY_NAME})
+endif()
 
-install(TARGETS ${LIBPGMATH_LIBRARY_NAME}
-  LIBRARY DESTINATION lib)
-
+if(NOT ${IOS})
+  install(TARGETS ${LIBPGMATH_LIBRARY_NAME}
+    LIBRARY DESTINATION lib)
+endif()
 install(TARGETS ${LIBPGMATH_LIBRARY_NAME}_static
   ARCHIVE DESTINATION lib)
+
